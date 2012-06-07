@@ -8,22 +8,11 @@ describe('BatchSync.js', function () {
 
   describe('when adding requests to the batch via batch.add(func)', function () {
 
-    var model, url, queryparams, type, data, query;
+    var url, type, data;
 
     beforeEach(function () {
-      var Contact = Backbone.Model.extend({
-        url: function () {
-          return '/contacts/' + this.id;
-        },
-        parse: function (data) {
-          return data.contact;
-        }
-      });
-
       data = { id: 1  };
-      model = new Contact(data);
-      var pos = model.url().lastIndexOf('?');
-      url = (pos >= 0 ? model.url().substr(pos) : model.url());
+      url = '/contacts/1';
       type = 'PUT';
     });
 
@@ -35,8 +24,8 @@ describe('BatchSync.js', function () {
         success = sinon.spy();
         error = sinon.spy();
         batch.add(function () {
-          model.save({}, { success: success, error: error });
-          model.save({}, { success: success, error: error });
+          $.ajax(url, { type: type, data: data, success: success, error: error });
+          $.ajax(url, { type: type, data: data, success: success, error: error });
         });
       });
 
@@ -53,11 +42,11 @@ describe('BatchSync.js', function () {
       });
 
       it('should have the data in the request object', function () {
-        expect(batch.requests[0].request.body).to.eql(JSON.stringify(data));
+        expect(batch.requests[0].request.body).to.eql($.param(data));
       });
 
-      it('should remove _bulk reference on model/collection once request is added to the batch', function () {
-        expect(model._bulk).to.not.exist;
+      it('should remove _bulk reference in $.ajaxSettings once request is added to the batch', function () {
+        expect($.ajaxSettings._bulk).to.not.exist;
       });
 
       describe('when calling batch.sync', function () {
@@ -95,11 +84,7 @@ describe('BatchSync.js', function () {
         });
 
         it('should send the correct encoded body in the data parameter of the batch request', function () {
-          expect(JSON.parse(body[0].body)).to.eql(data);
-        });
-
-        it('should send the correct query params in the query parameter of the batch request', function () {
-          expect(body[0].query).to.eql(query);
+          expect(body[0].body).to.eql($.param(data));
         });
 
         describe('when the server responds', function () {
@@ -118,7 +103,7 @@ describe('BatchSync.js', function () {
           });
 
           it('should pass the parsed response to the success function', function () {
-            expect(success.args[0][1]).to.eql(JSON.parse(JSON.parse(response[0]).body));
+            expect(success.args[0][0]).to.eql(JSON.parse(JSON.parse(response[0]).body));
           });
 
           it('should call the error function on a failed request', function () {
@@ -126,7 +111,7 @@ describe('BatchSync.js', function () {
           });
 
           it('should pass the parsed response to the error function', function () {
-            expect(error.args[0][1]).to.eql(JSON.parse(JSON.parse(response[1]).body));
+            expect(error.args[0][0]).to.eql(JSON.parse(JSON.parse(response[1]).body));
           });
 
         });
@@ -144,7 +129,7 @@ describe('BatchSync.js', function () {
         beforeEach(function () {
           beforeSend = sinon.spy('func');
           batch.add(function () {
-            model.fetch({ beforeSend: beforeSend });
+            $.ajax(url, { type: type, data: data, beforeSend: beforeSend });
           });
         });
 
@@ -163,7 +148,7 @@ describe('BatchSync.js', function () {
         beforeEach(function () {
           beforeSend = function () { return false; };
           batch.add(function () {
-            model.fetch({ beforeSend: beforeSend });
+            $.ajax(url, { type: type, data: data, beforeSend: beforeSend });
           });
         });
         

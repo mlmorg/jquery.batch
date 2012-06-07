@@ -24,7 +24,7 @@
   window.BatchSync = BatchSync;
 
   // our methods
-  _.extend(BatchSync.prototype, {
+  $.extend(BatchSync.prototype, {
 
     // method for adding requests to the batch
     add: function (func) {
@@ -45,7 +45,7 @@
       var instance = this;
 
       // map an array of requests
-      var requests = _.map(this.requests, function (data, i) {
+      var requests = $.map(this.requests, function (data, i) {
         return data.request;
       });
 
@@ -106,7 +106,7 @@
       // similar to the request header above, when the user passes headers in the settings.headers object
       // we explicitly set those for the inner requests
       if (settings.headers) {
-        _.each(settings.headers, function (value, name) {
+        $.each(settings.headers, function (name, value) {
           data.request.headers[name.toLowerCase() || name] = value;
         });
       }
@@ -119,7 +119,7 @@
     _deliver: function (data, status, xhr) {
       var instance = this;
       // create an array of returned responses based on newlines and loop through them
-      _.each(data.split('\n'), function (response, i) {
+      $.each(data.split('\n'), function (i, response) {
         // only work with batch requests that we have stored
         if (!instance.requests[i]) {
           return;
@@ -158,7 +158,7 @@
       var params = {};
 
       // loop through key/value pairs
-      _.each(string.split('&'), function (pair) {
+      $.each(string.split('&'), function (i, pair) {
         // extract the key & value
         pair = pair.split('=');
 
