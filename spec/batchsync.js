@@ -1,19 +1,42 @@
 describe('BatchSync.js', function () {
 
-  var batch;
+  var batch, url, type, data;
 
   beforeEach(function () {
-    batch = new BatchSync();
+    data = { id: 1 };
+    url = '/contacts/1';
+    type = 'PUT';
+  });
+
+  describe('when adding requests on instantiation', function () {
+
+    var add;
+
+    beforeEach(function () {
+      add = sinon.spy(BatchSync.prototype, 'add');
+      batch = new BatchSync(function () {
+        $.ajax(url);
+      });
+    });
+
+    afterEach(function () {
+      add.restore();
+    });
+
+    it('should call BatchSync.add', function () {
+      expect(add.calledOnce).to.be.true;
+    });
+
+    it('should add the request to the batch', function () {
+      expect(batch.requests.length).to.equal(1);
+    });
+
   });
 
   describe('when adding requests to the batch via batch.add(func)', function () {
 
-    var url, type, data;
-
     beforeEach(function () {
-      data = { id: 1  };
-      url = '/contacts/1';
-      type = 'PUT';
+      batch = new BatchSync();
     });
 
     describe('when passing success/error functions as options', function () {

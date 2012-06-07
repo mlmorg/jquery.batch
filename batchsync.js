@@ -4,7 +4,13 @@
   var $ = window.$;
 
   // create our class
-  var BatchSync = function (options) {
+  var BatchSync = function (func, options) {
+    // shift arguments if func is an object
+    if (typeof func === 'object') {
+      options = func;
+      func = undefined;
+    }
+
     // default options
     this.options = $.extend({
       url: '/_bulk',
@@ -17,7 +23,7 @@
     // requests storage
     this.requests = [];
     
-    return this;
+    return func ? this.add(func) : this;
   };
 
   // add our class to the global namespace
