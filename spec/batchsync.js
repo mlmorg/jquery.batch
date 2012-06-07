@@ -6,7 +6,7 @@ describe('BatchSync.js', function () {
     batch = new BatchSync();
   });
 
-  describe('when adding calls to the batch via batch.add(model, method)', function () {
+  describe('when adding requests to the batch via batch.add(func)', function () {
 
     var model, url, queryparams, type, data, query;
 
@@ -34,13 +34,9 @@ describe('BatchSync.js', function () {
       beforeEach(function () {
         success = sinon.spy();
         error = sinon.spy();
-        batch.add(model, 'save', {}, {
-          success: success,
-          error: error
-        });
-        batch.add(model, 'save', {}, {
-          success: success,
-          error: error
+        batch.add(function () {
+          model.save({}, { success: success, error: error });
+          model.save({}, { success: success, error: error });
         });
       });
 
@@ -147,7 +143,9 @@ describe('BatchSync.js', function () {
 
         beforeEach(function () {
           beforeSend = sinon.spy('func');
-          batch.add(model, 'fetch', { beforeSend: beforeSend });
+          batch.add(function () {
+            model.fetch({ beforeSend: beforeSend });
+          });
         });
 
         it('should call the beforeSend function', function () {
@@ -164,7 +162,9 @@ describe('BatchSync.js', function () {
 
         beforeEach(function () {
           beforeSend = function () { return false; };
-          batch.add(model, 'fetch', { beforeSend: beforeSend });
+          batch.add(function () {
+            model.fetch({ beforeSend: beforeSend });
+          });
         });
         
         it('should not add request to batch', function () {

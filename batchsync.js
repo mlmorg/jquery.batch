@@ -1,36 +1,34 @@
-(function () {
+(function (window) {
 
-  // global namespace
-  var root = this;
-
-  // global references
-  var Backbone = root.Backbone,
-      _ = root._,
-      $ = root.$;
-
-  // Backbone.sync alias
-  var BackboneSync = Backbone.sync;
+  // jQuery alias
+  var $ = window.$;
 
   // create our class
-  var BatchSync = function (options) {
+  var BatchSync = function (func) {
     this.requests = [];
   };
-  BatchSync.extend = Backbone.Model.extend;
 
   // add our class to the global namespace
-  root.BatchSync = BatchSync;
+  window.BatchSync = BatchSync;
 
   // our methods
   _.extend(BatchSync.prototype, {
 
-    // pulic method for adding a request to the batch
-    add: function (obj, method) {
-      obj._batch = this;
-      method = _.isString(method) ? obj[method] : method;
-      return method.apply(obj, Array.prototype.slice.call(arguments, 2));
+    // method for adding requests to the batch
+    add: function (func) {
+      // set global _batch variable in jQuery.ajaxSettings
+      $.ajaxSettings._batch = this;
+
+      // call the user's function
+      func.call(this);
+      
+      // remove the global _batch variable
+      delete $.ajaxSettings._batch;
+
+      return this;
     },
 
-    // public method for running the batch request
+    // method for running the batch request
     sync: function (options) {
       var instance = this;
 
@@ -41,7 +39,11 @@
 
       // setup our base options
       options = _.extend({
+        url: '/_bulk',
+        type: 'POST',
         data: requests,
+        contentType: 'application/json',
+        processData: false,
         dataType: 'text'
       }, options);
 
@@ -58,11 +60,7 @@
       };
 
       // call the request
-      return BackboneSync.call(Backbone, 'create', this, options);
-    },
-
-    url: function () {
-      return '/_bulk';
+      return $.ajax(options);
     },
 
     // private method to add a request to the batch requests array
@@ -181,8 +179,22 @@
 
   });
 
-  // override Backbone.sync to cancel any outgoing requests with a _batch object and add them to the batch requests array
-  Backbone.sync = function (method, model, options) {
+  // override jQuery.ajax to cancel any outgoing requests called with a BatchSync() function
+  // and add them to the batch requests array for that batch instance
+  // -------
+  
+  var $ajax = $.ajax;
+  
+  $.ajax = function (url, options) {
+    // shift arguments when options are passed as first argument
+    if (typeof url === 'object') {
+      options = url;
+      url = undefined;
+    }
+
+    // set options object
+    options = options || {};
+
     // override the jQuery beforeSend method
     var beforeSend = options.beforeSend;
     options.beforeSend = function (xhr, settings) {
@@ -196,21 +208,18 @@
         }
       }
 
-      // we're only worried about models/collections with an added _batch object
-      if (model._batch) {
+      // we're only worried about requests made within a BatchSync function (aka they have a _batch object)
+      if (settings._batch) {
         // add request to batch
-        model._batch._addRequest(xhr, settings);
-
-        // remove reference to batch
-        delete model._batch;
+        settings._batch._addRequest(xhr, settings);
 
         // cancel this request
         return false;
       }
     };
 
-    // run original Backbone.sync method for all other requests
-    return BackboneSync.call(Backbone, method, model, options);
+    // run original $.ajax method for all other requests
+    return $ajax.call(this, url, options);
   };
 
-}).call(this);
+})(window);
