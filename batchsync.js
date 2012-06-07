@@ -4,8 +4,20 @@
   var $ = window.$;
 
   // create our class
-  var BatchSync = function (func) {
+  var BatchSync = function (options) {
+    // default options
+    this.options = $.extend({
+      url: '/_bulk',
+      type: 'POST',
+      contentType: 'application/json',
+      processData: false,
+      dataType: 'text'
+    }, options);
+
+    // requests storage
     this.requests = [];
+    
+    return this;
   };
 
   // add our class to the global namespace
@@ -37,19 +49,12 @@
         return data.request;
       });
 
-      // setup our base options
-      options = _.extend({
-        url: '/_bulk',
-        type: 'POST',
-        data: requests,
-        contentType: 'application/json',
-        processData: false,
-        dataType: 'text'
-      }, options);
+      // set options
+      $.extend(this.options, { data: requests }, options);
 
       // extend the success option
-      var success = options.success;
-      options.success = function (data, status, xhr) {
+      var success = this.options.success;
+      this.options.success = function (data, status, xhr) {
         // call our _deliver method to handle each individual batch request response
         instance._deliver.call(instance, data, status, xhr);
         
@@ -60,7 +65,7 @@
       };
 
       // call the request
-      return $.ajax(options);
+      return $.ajax(this.options);
     },
 
     // private method to add a request to the batch requests array
