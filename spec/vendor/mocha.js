@@ -80,7 +80,7 @@ function isArray(obj) {
 /**
  * Event emitter constructor.
  *
- * @api public.
+ * @api public
  */
 
 function EventEmitter(){};
@@ -188,7 +188,7 @@ EventEmitter.prototype.removeAllListeners = function (name) {
 /**
  * Gets all listeners for a certain event.
  *
- * @api publci
+ * @api public
  */
 
 EventEmitter.prototype.listeners = function (name) {
@@ -407,15 +407,15 @@ module.exports = Context;
 function Context(){}
 
 /**
- * Set the context `Test` to `test`.
+ * Set the context `Runnable` to `runnable`.
  *
- * @param {Test} test
+ * @param {Runnable} runnable
  * @return {Context}
  * @api private
  */
 
-Context.prototype.test = function(test){
-  this._test = test;
+Context.prototype.runnable = function(runnable){
+  this._runnable = runnable;
   return this;
 };
 
@@ -428,12 +428,12 @@ Context.prototype.test = function(test){
  */
 
 Context.prototype.timeout = function(ms){
-  this._test.timeout(ms);
+  this._runnable.timeout(ms);
   return this;
 };
 
 /**
- * Inspect the context void of `._test`.
+ * Inspect the context void of `._runnable`.
  *
  * @return {String}
  * @api private
@@ -441,7 +441,7 @@ Context.prototype.timeout = function(ms){
 
 Context.prototype.inspect = function(){
   return JSON.stringify(this, function(key, val){
-    return '_test' == key
+    return '_runnable' == key
       ? undefined
       : val;
   }, 2);
@@ -560,7 +560,7 @@ module.exports = function(suite){
      * and/or tests.
      */
   
-    context.describe = function(title, fn){
+    context.describe = context.context = function(title, fn){
       var suite = Suite.create(suites[0], title);
       suites.unshift(suite);
       fn();
@@ -870,7 +870,7 @@ exports = module.exports = Mocha;
  * Library version.
  */
 
-exports.version = '1.0.0';
+exports.version = '1.0.3';
 
 /**
  * Expose internals.
@@ -908,6 +908,7 @@ function image(name) {
  *   - `globals` array of accepted globals
  *   - `timeout` timeout in milliseconds
  *   - `ignoreLeaks` ignore global leaks
+ *   - `grep` string or regexp to filter tests with
  *
  * @param {Object} options
  * @api public
@@ -917,6 +918,7 @@ function Mocha(options) {
   options = options || {};
   this.files = [];
   this.options = options;
+  this.grep(options.grep);
   this.suite = new exports.Suite('', new exports.Context);
   this.ui(options.ui);
   this.reporter(options.reporter);
@@ -1004,6 +1006,21 @@ Mocha.prototype.growl = function(runner, reporter) {
 };
 
 /**
+ * Add regexp to grep for to the options object
+ *
+ * @param {RegExp} or {String} re
+ * @return {Mocha}
+ * @api public
+ */
+
+Mocha.prototype.grep = function(re){
+  this.options.grep = 'string' == typeof re
+    ? new RegExp(re)
+    : re;
+  return this;
+};
+
+/**
  * Run tests and invoke `fn()` when complete.
  *
  * @param {Function} fn
@@ -1023,7 +1040,6 @@ Mocha.prototype.run = function(fn){
   if (options.growl) this.growl(runner, reporter);
   return runner.run(fn);
 };
-
 }); // module: mocha.js
 
 require.register("reporters/base.js", function(module, exports, require){
@@ -1034,6 +1050,16 @@ require.register("reporters/base.js", function(module, exports, require){
 
 var tty = require('browser/tty')
   , diff = require('browser/diff');
+
+/**
+ * Save timer references to avoid Sinon interfering (see GH-237).
+ */
+
+var Date = global.Date
+  , setTimeout = global.setTimeout
+  , setInterval = global.setInterval
+  , clearTimeout = global.clearTimeout
+  , clearInterval = global.clearInterval;
 
 /**
  * Check if both stdio streams are associated with a tty.
@@ -1222,7 +1248,7 @@ exports.list = function(failures){
 
 function Base(runner) {
   var self = this
-    , stats = this.stats = { suites: 0, tests: 0, passes: 0, failures: 0 }
+    , stats = this.stats = { suites: 0, tests: 0, passes: 0, pending: 0, failures: 0 }
     , failures = this.failures = [];
 
   if (!runner) return;
@@ -1266,6 +1292,10 @@ function Base(runner) {
     stats.end = new Date;
     stats.duration = new Date - stats.start;
   });
+
+  runner.on('pending', function(){
+    stats.pending++;
+  });
 }
 
 /**
@@ -1277,17 +1307,26 @@ function Base(runner) {
 
 Base.prototype.epilogue = function(){
   var stats = this.stats
-    , fmt;
+    , fmt
+    , tests;
 
   console.log();
+
+  function pluralize(n) {
+    return 1 == n ? 'test' : 'tests';
+  }
 
   // failure
   if (stats.failures) {
     fmt = color('bright fail', '  ✖')
-      + color('fail', ' %d of %d tests failed')
+      + color('fail', ' %d of %d %s failed')
       + color('light', ':')
 
-    console.error(fmt, stats.failures, this.runner.total);
+    console.error(fmt,
+      stats.failures,
+      this.runner.total,
+      pluralize(this.runner.total));
+
     Base.list(this.failures);
     console.error();
     return;
@@ -1295,10 +1334,22 @@ Base.prototype.epilogue = function(){
 
   // pass
   fmt = color('bright pass', '  ✔')
-    + color('green', ' %d tests complete')
+    + color('green', ' %d %s complete')
     + color('light', ' (%dms)');
 
-  console.log(fmt, stats.tests || 0, stats.duration);
+  console.log(fmt,
+    stats.tests || 0,
+    pluralize(stats.tests),
+    stats.duration);
+
+  // pending
+  if (stats.pending) {
+    fmt = color('pending', '  •')
+      + color('pending', ' %d %s pending');
+
+    console.log(fmt, stats.pending, pluralize(stats.pending));
+  }
+
   console.log();
 };
 
@@ -1326,6 +1377,7 @@ function pad(str, len) {
 
 function errorDiff(err, type) {
   return diff['diff' + type](err.actual, err.expected).map(function(str){
+    if (/^(\n+)$/.test(str.value)) str.value = Array(++RegExp.$1.length).join('<newline>');
     if (str.added) return colorLines('diff added', str.value);
     if (str.removed) return colorLines('diff removed', str.value);
     return str.value;
@@ -1552,6 +1604,16 @@ var Base = require('./base')
   , escape = utils.escape;
 
 /**
+ * Save timer references to avoid Sinon interfering (see GH-237).
+ */
+
+var Date = global.Date
+  , setTimeout = global.setTimeout
+  , setInterval = global.setInterval
+  , clearTimeout = global.clearTimeout
+  , clearInterval = global.clearInterval;
+
+/**
  * Expose `Doc`.
  */
 
@@ -1588,7 +1650,8 @@ function HTML(runner) {
     , failures = items[2].getElementsByTagName('em')[0]
     , duration = items[3].getElementsByTagName('em')[0]
     , canvas = stat.getElementsByTagName('canvas')[0]
-    , stack = [root]
+    , report = fragment('<ul id="report"></ul>')
+    , stack = [report]
     , progress
     , ctx
 
@@ -1600,6 +1663,7 @@ function HTML(runner) {
   if (!root) return error('#mocha div missing, add it to your document');
 
   root.appendChild(stat);
+  root.appendChild(report);
 
   if (progress) progress.size(40);
 
@@ -1607,11 +1671,12 @@ function HTML(runner) {
     if (suite.root) return;
 
     // suite
-    var el = fragment('<div class="suite"><h1>%s</h1></div>', suite.title);
+    var url = location.origin + location.pathname + '?grep=^' + utils.escapeRegexp(suite.fullTitle());
+    var el = fragment('<li class="suite"><h1><a href="%s">%s</a></h1></li>', url, suite.title);
 
     // container
     stack[0].appendChild(el);
-    stack.unshift(document.createElement('div'));
+    stack.unshift(document.createElement('ul'));
     el.appendChild(stack[0]);
   });
 
@@ -1621,7 +1686,7 @@ function HTML(runner) {
   });
 
   runner.on('fail', function(test, err){
-    if (err.uncaught) runner.emit('test end', test);
+    if ('hook' == test.type || err.uncaught) runner.emit('test end', test);
   });
 
   runner.on('test end', function(test){
@@ -1637,11 +1702,11 @@ function HTML(runner) {
 
     // test
     if ('passed' == test.state) {
-      var el = fragment('<div class="test pass"><h2>%e</h2></div>', test.title);
+      var el = fragment('<li class="test pass %e"><h2>%e<span class="duration">%ems</span></h2></li>', test.speed, test.title, test.duration);
     } else if (test.pending) {
-      var el = fragment('<div class="test pass pending"><h2>%e</h2></div>', test.title);
+      var el = fragment('<li class="test pass pending"><h2>%e</h2></li>', test.title);
     } else {
-      var el = fragment('<div class="test fail"><h2>%e</h2></div>', test.title);
+      var el = fragment('<li class="test fail"><h2>%e</h2></li>', test.title);
       var str = test.err.stack || test.err.toString();
 
       // FF / Opera do not add the message
@@ -2450,8 +2515,9 @@ function Progress(runner, options) {
 
   // tests complete
   runner.on('test end', function(){
+    complete++;
     var incomplete = total - complete
-      , percent = complete++ / total
+      , percent = complete / total
       , n = width * percent | 0
       , i = width - n;
 
@@ -2675,23 +2741,23 @@ function Teamcity(runner) {
   });
 
   runner.on('test', function(test) {
-    console.log("##teamcity[testStarted name='%s']", escape(test.fullTitle()));
+    console.log("##teamcity[testStarted name='" + escape(test.fullTitle()) + "']");
   });
 
   runner.on('fail', function(test, err) {
-    console.log("##teamcity[testFailed name='%s' message='%s']", escape(test.fullTitle()), escape(err.message));
+    console.log("##teamcity[testFailed name='" + escape(test.fullTitle()) + "' message='" + escape(err.message) + "']");
   });
 
   runner.on('pending', function(test) {
-    console.log("##teamcity[testIgnored name='%s' message='pending']", escape(test.fullTitle()));
+    console.log("##teamcity[testIgnored name='" + escape(test.fullTitle()) + "' message='pending']");
   });
 
   runner.on('test end', function(test) {
-    console.log("##teamcity[testFinished name='%s' duration='%s']", escape(test.fullTitle()), test.duration);
+    console.log("##teamcity[testFinished name='" + escape(test.fullTitle()) + "' duration='" + test.duration + "']");
   });
 
   runner.on('end', function() {
-    console.log("##teamcity[testSuiteFinished name='mocha.suite' duration='%s']", stats.duration);
+    console.log("##teamcity[testSuiteFinished name='mocha.suite' duration='" + stats.duration + "']");
   });
 }
 
@@ -2700,8 +2766,18 @@ function Teamcity(runner) {
  */
 
 function escape(str) {
-  return str.replace(/'/g, "|'");
+  return str
+    .replace(/\|/g, "||")
+    .replace(/\n/g, "|n")
+    .replace(/\r/g, "|r")
+    .replace(/\[/g, "|[")
+    .replace(/\]/g, "|]")
+    .replace(/\u0085/g, "|x")
+    .replace(/\u2028/g, "|l")
+    .replace(/\u2029/g, "|p")
+    .replace(/'/g, "|'");
 }
+
 }); // module: reporters/teamcity.js
 
 require.register("reporters/xunit.js", function(module, exports, require){
@@ -2713,6 +2789,16 @@ require.register("reporters/xunit.js", function(module, exports, require){
 var Base = require('./base')
   , utils = require('../utils')
   , escape = utils.escape;
+
+/**
+ * Save timer references to avoid Sinon interfering (see GH-237).
+ */
+
+var Date = global.Date
+  , setTimeout = global.setTimeout
+  , setInterval = global.setInterval
+  , clearTimeout = global.clearTimeout
+  , clearInterval = global.clearInterval;
 
 /**
  * Expose `XUnit`.
@@ -2821,6 +2907,16 @@ var EventEmitter = require('browser/events').EventEmitter
   , debug = require('browser/debug')('runnable');
 
 /**
+ * Save timer references to avoid Sinon interfering (see GH-237).
+ */
+
+var Date = global.Date
+  , setTimeout = global.setTimeout
+  , setInterval = global.setInterval
+  , clearTimeout = global.clearTimeout
+  , clearInterval = global.clearInterval;
+
+/**
  * Expose `Runnable`.
  */
 
@@ -2922,6 +3018,8 @@ Runnable.prototype.run = function(fn){
     , ctx = this.ctx
     , finished
     , emitted;
+
+  if (ctx) ctx.runnable(this);
 
   // timeout
   if (this.async) {
@@ -3037,7 +3135,8 @@ Runner.prototype.constructor = Runner;
 
 
 /**
- * Run tests with full titles matching `re`.
+ * Run tests with full titles matching `re`. Updates runner.total
+ * with number of tests matched.
  *
  * @param {RegExp} re
  * @return {Runner} for chaining
@@ -3047,7 +3146,28 @@ Runner.prototype.constructor = Runner;
 Runner.prototype.grep = function(re){
   debug('grep %s', re);
   this._grep = re;
+  this.total = this.grepTotal(this.suite);
   return this;
+};
+
+/**
+ * Returns the number of tests matching the grep search for the 
+ * given suite.
+ *
+ * @param {Suite} suite
+ * @return {Number}
+ * @api public
+ */
+
+Runner.prototype.grepTotal = function(suite) {
+  var self = this;
+  var total = 0;
+
+  suite.eachTest(function(test){
+    if (self._grep.test(test.fullTitle())) total++;
+  });
+
+  return total;
 };
 
 /**
@@ -3100,6 +3220,9 @@ Runner.prototype.checkGlobals = function(test){
 Runner.prototype.fail = function(test, err){
   ++this.failures;
   test.state = 'failed';
+  if ('string' == typeof err) {
+    err = new Error('the string "' + err + '" was thrown, throw an Error :)');
+  }
   this.emit('fail', test, err);
 };
 
@@ -3140,7 +3263,6 @@ Runner.prototype.hook = function(name, fn){
     var hook = hooks[i];
     if (!hook) return fn();
     self.currentRunnable = hook;
-    hook.ctx.test(self.test);
 
     self.emit('hook', hook);
 
@@ -3249,7 +3371,6 @@ Runner.prototype.runTest = function(fn){
     , self = this;
 
   try {
-    test.ctx.test(test);
     test.on('error', function(err){
       self.fail(test, err);
     });
@@ -3328,10 +3449,14 @@ Runner.prototype.runTests = function(suite, fn){
  */
 
 Runner.prototype.runSuite = function(suite, fn){
-  var self = this
+  var total = this.grepTotal(suite)
+    , self = this
     , i = 0;
 
   debug('run suite %s', suite.fullTitle());
+
+  if (!total) return fn();
+
   this.emit('suite', this.suite = suite);
 
   function next() {
@@ -3669,6 +3794,24 @@ Suite.prototype.total = function(){
   }, 0) + this.tests.length;
 };
 
+/**
+ * Iterates through each suite recursively to find
+ * all tests. Applies a function in the format
+ * `fn(test)`.
+ *
+ * @param {Function} fn
+ * @return {Suite}
+ * @api private
+ */
+
+Suite.prototype.eachTest = function(fn){
+  utils.forEach(this.tests, fn);
+  utils.forEach(this.suites, function(suite){
+    suite.eachTest(fn);
+  });
+  return this;
+};
+
 }); // module: suite.js
 
 require.register("test.js", function(module, exports, require){
@@ -3907,6 +4050,7 @@ exports.files = function(dir, ret){
  *
  * @param {String} str
  * @return {String}
+ * @api private
  */
 
 exports.slug = function(str){
@@ -3915,8 +4059,19 @@ exports.slug = function(str){
     .replace(/ +/g, '-')
     .replace(/[^-\w]/g, '');
 };
-}); // module: utils.js
 
+/**
+ * Escape regular expression characters in `str`.
+ *
+ * @param {String} str
+ * @return {String}
+ * @api private
+ */
+
+exports.escapeRegexp = function(str){
+  return str.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&");
+};
+}); // module: utils.js
 /**
  * Node shims.
  *
@@ -3946,15 +4101,16 @@ process.nextTick = (function(){
   var timeouts = []
     , name = 'mocha-zero-timeout'
 
+  window.addEventListener('message', function(e){
+    if (e.source == window && e.data == name) {
+      if (e.stopPropagation) e.stopPropagation();
+      if (timeouts.length) timeouts.shift()();
+    }
+  }, true);
+
   return function(fn){
     timeouts.push(fn);
     window.postMessage(name, '*');
-    window.addEventListener('message', function(e){
-      if (e.source == window && e.data == name) {
-        if (e.stopPropagation) e.stopPropagation();
-        if (timeouts.length) timeouts.shift()();
-      }
-    }, true);
   }
 })();
 
@@ -4051,7 +4207,7 @@ window.mocha = require('mocha');
    * Run mocha, returning the Runner.
    */
 
-  mocha.run = function(){
+  mocha.run = function(fn){
     suite.emit('run');
     var runner = new mocha.Runner(suite);
     var Reporter = options.reporter || mocha.reporters.HTML;
@@ -4062,7 +4218,7 @@ window.mocha = require('mocha');
     if (options.globals) runner.globals(options.globals);
     runner.globals(['location']);
     runner.on('end', highlightCode);
-    return runner.run();
+    return runner.run(fn);
   };
 })();
 })();

@@ -23,9 +23,8 @@ describe('BatchSync.js', function () {
       data = { id: 1  };
       model = new Contact(data);
       var pos = model.url().lastIndexOf('?');
-      url = '/v0' + (pos >= 0 ? model.url().substr(pos) : model.url());
+      url = (pos >= 0 ? model.url().substr(pos) : model.url());
       type = 'PUT';
-      query = { _subdomain: 'api' };
     });
 
     describe('when passing success/error functions as options', function () {
@@ -57,10 +56,6 @@ describe('BatchSync.js', function () {
         expect(batch.requests[0].request.path).to.equal(url);
       });
 
-      it('should have the decoded query params in the request object', function () {
-        expect(batch.requests[0].request.query).to.eql(query);
-      });
-
       it('should have the data in the request object', function () {
         expect(batch.requests[0].request.body).to.eql(JSON.stringify(data));
       });
@@ -76,9 +71,7 @@ describe('BatchSync.js', function () {
         beforeEach(function () {
           server = sinon.fakeServer.create();
           batch.sync();
-          try {
-            body = JSON.parse(server.requests[0].requestBody);
-          } catch(e) {}
+          body = server.requests[0].requestBody;
         });
 
         afterEach(function () {
