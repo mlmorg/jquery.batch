@@ -61,7 +61,7 @@
       });
 
       // set options
-      $.extend(this.options, { data: requests }, options);
+      $.extend(this.options, { data: JSON.stringify(requests) }, options);
 
       // extend the success option
       var success = this.options.success;

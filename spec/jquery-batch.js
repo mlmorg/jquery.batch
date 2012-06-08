@@ -91,7 +91,7 @@ describe('$.batch', function () {
         beforeEach(function () {
           server = sinon.fakeServer.create();
           batch.send();
-          body = server.requests[0].requestBody;
+          body = JSON.parse(server.requests[0].requestBody);
         });
 
         afterEach(function () {
