@@ -5,6 +5,11 @@
 
   // create our class
   var BatchSync = function (func, options) {
+    // always instantiate a BatchSync class even if called without "new"
+    if (!(this instanceof BatchSync)) {
+      return new BatchSync(func, options);
+    }
+
     // shift arguments if func is an object
     if (typeof func === 'object') {
       options = func;

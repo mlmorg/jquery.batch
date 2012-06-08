@@ -8,6 +8,18 @@ describe('BatchSync.js', function () {
     type = 'PUT';
   });
 
+  describe('when instantiating without using the new operator', function () {
+
+    beforeEach(function () {
+      batch = BatchSync();
+    });
+
+    it('should instantiate the BatchSync class', function () {
+      expect(batch instanceof BatchSync).to.be.true;
+    });
+
+  });
+
   describe('when adding requests on instantiation', function () {
 
     var add;
