@@ -1,4 +1,4 @@
-describe('BatchSync.js', function () {
+describe('$.batch', function () {
 
   var batch, url, type, data;
 
@@ -11,11 +11,11 @@ describe('BatchSync.js', function () {
   describe('when instantiating without using the new operator', function () {
 
     beforeEach(function () {
-      batch = BatchSync();
+      batch = $.batch();
     });
 
-    it('should instantiate the BatchSync class', function () {
-      expect(batch instanceof BatchSync).to.be.true;
+    it('should instantiate the $.batch class', function () {
+      expect(batch instanceof $.batch).to.be.true;
     });
 
   });
@@ -25,8 +25,8 @@ describe('BatchSync.js', function () {
     var add;
 
     beforeEach(function () {
-      add = sinon.spy(BatchSync.prototype, 'add');
-      batch = new BatchSync(function () {
+      add = sinon.spy($.batch.prototype, 'add');
+      batch = new $.batch(function () {
         $.ajax(url);
       });
     });
@@ -35,7 +35,7 @@ describe('BatchSync.js', function () {
       add.restore();
     });
 
-    it('should call BatchSync.add', function () {
+    it('should call $.batch.add', function () {
       expect(add.calledOnce).to.be.true;
     });
 
@@ -48,7 +48,7 @@ describe('BatchSync.js', function () {
   describe('when adding requests to the batch via batch.add(func)', function () {
 
     beforeEach(function () {
-      batch = new BatchSync();
+      batch = new $.batch();
     });
 
     describe('when passing success/error functions as options', function () {
@@ -84,7 +84,7 @@ describe('BatchSync.js', function () {
         expect($.ajaxSettings._bulk).to.not.exist;
       });
 
-      describe('when calling batch.sync', function () {
+      describe('when calling $.batch.sync', function () {
 
         var server, body;
 

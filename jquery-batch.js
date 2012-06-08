@@ -4,10 +4,10 @@
   var $ = window.$;
 
   // create our class
-  var BatchSync = function (func, options) {
-    // always instantiate a BatchSync class even if called without "new"
-    if (!(this instanceof BatchSync)) {
-      return new BatchSync(func, options);
+  var Batch = function (func, options) {
+    // always instantiate a Batch class even if called without "new"
+    if (!(this instanceof Batch)) {
+      return new Batch(func, options);
     }
 
     // shift arguments if func is an object
@@ -31,11 +31,11 @@
     return func ? this.add(func) : this;
   };
 
-  // add our class to the global namespace
-  window.BatchSync = BatchSync;
+  // add our class to the jQuery namespace
+  $.batch = Batch;
 
   // our methods
-  $.extend(BatchSync.prototype, {
+  $.extend(Batch.prototype, {
 
     // method for adding requests to the batch
     add: function (func) {
@@ -195,7 +195,7 @@
 
   });
 
-  // override jQuery.ajax to cancel any outgoing requests called with a BatchSync() function
+  // override jQuery.ajax to cancel any outgoing requests called within a Batch() function
   // and add them to the batch requests array for that batch instance
   // -------
   
@@ -224,7 +224,7 @@
         }
       }
 
-      // we're only worried about requests made within a BatchSync function (aka they have a _batch object)
+      // we're only worried about requests made within a Batch function (aka they have a _batch object)
       if (settings._batch) {
         // add request to batch
         settings._batch._addRequest(xhr, settings);
