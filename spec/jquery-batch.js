@@ -84,13 +84,13 @@ describe('$.batch', function () {
         expect($.ajaxSettings._bulk).to.not.exist;
       });
 
-      describe('when calling $.batch.sync', function () {
+      describe('when calling $.batch.send', function () {
 
         var server, body;
 
         beforeEach(function () {
           server = sinon.fakeServer.create();
-          batch.sync();
+          batch.send();
           body = server.requests[0].requestBody;
         });
 

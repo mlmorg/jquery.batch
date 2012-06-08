@@ -52,7 +52,7 @@
     },
 
     // method for running the batch request
-    sync: function (options) {
+    send: function (options) {
       var instance = this;
 
       // map an array of requests
