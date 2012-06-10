@@ -102,10 +102,8 @@
         // remove query params from url
         data.request.path = settings.url.replace('?' + queryparams, '');
 
-        // decode query params into "query" object if it doesn't already exist
-        // if jQuery and $.deparam are present, they will be used
-        // otherwise, we use the built-in query param decoder
-        data.request.query = settings.query ? settings.query : $ && $.deparam ? $.deparam(queryparams) : this._deparam(queryparams);
+        // add the query params to the "query" object
+        data.request.query = settings.query ? settings.query : queryparams;
       }
 
       // set request header
@@ -164,22 +162,6 @@
     _extractParams: function (url) {
       var pos = url.lastIndexOf('?');
       return pos >= 0 ? url.substr(pos + 1) : null;
-    },
-
-    // private method to decode query parameters (not very robust)
-    _deparam: function (string) {
-      var params = {};
-
-      // loop through key/value pairs
-      $.each(string.split('&'), function (i, pair) {
-        // extract the key & value
-        pair = pair.split('=');
-
-        // add pairs to params object
-        params[pair[0]] = pair[1];
-      });
-
-      return params;
     },
 
     // private method to create statusText based on a statusCode a la jQuery
