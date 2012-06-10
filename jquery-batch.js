@@ -5,8 +5,22 @@
   // jQuery alias
   var $ = window.$;
 
+  // global batch settings
+  $.batchSettings = {
+    url: '/_bulk',
+    type: 'POST',
+    contentType: 'application/json',
+    processData: false,
+    dataType: 'text'
+  };
+
+  // setup method
+  $.batchSetup = function (options) {
+    return $.extend($.batchSettings, options);
+  };
+
   // create our class
-  var Batch = function (func, options) {
+  var Batch = $.batch = function (func, options) {
     // always instantiate a Batch class even if called without "new"
     if (!(this instanceof Batch)) {
       return new Batch(func, options);
@@ -19,22 +33,13 @@
     }
 
     // default options
-    this.options = $.extend({
-      url: '/_bulk',
-      type: 'POST',
-      contentType: 'application/json',
-      processData: false,
-      dataType: 'text'
-    }, options);
+    this.options = $.extend({}, $.batchSettings, options);
 
     // requests storage
     this.requests = [];
     
     return func ? this.add(func) : this;
   };
-
-  // add our class to the jQuery namespace
-  $.batch = Batch;
 
   // our methods
   $.extend(Batch.prototype, {
@@ -179,7 +184,7 @@
 
   });
 
-  // override jQuery.ajax to cancel any outgoing requests called within a Batch() function
+  // override jQuery.ajax to cancel any outgoing requests called within a $.batch() function
   // and add them to the batch requests array for that batch instance
   // -------
   
@@ -208,7 +213,7 @@
         }
       }
 
-      // we're only worried about requests made within a Batch function (aka they have a _batch object)
+      // we're only worried about requests made within a $.batch function (aka they have a _batch object)
       if (settings._batch) {
         // add request to batch
         settings._batch._addRequest(xhr, settings);

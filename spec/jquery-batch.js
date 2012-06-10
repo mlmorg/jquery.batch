@@ -8,6 +8,26 @@ describe('$.batch', function () {
     type = 'PUT';
   });
 
+  describe('when editing the global batch settings', function () {
+
+    var options;
+
+    beforeEach(function () {
+      options = { url: '/batch' };
+      $.batchSetup(options);
+      batch = $.batch();
+    });
+
+    it('should change the global batch settings object', function () {
+      expect($.batchSettings.url).to.equal(options.url);
+    });
+
+    it('should change the settings for a batch request instance', function () {
+      expect(batch.options.url).to.equal(options.url);
+    });
+
+  });
+
   describe('when instantiating without using the new operator', function () {
 
     beforeEach(function () {
