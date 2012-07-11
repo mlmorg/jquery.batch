@@ -1,3 +1,9 @@
+/*
+ * jquery-batch.js v0.1
+ * Copyright 2012, Matt Morgan (@mlmorg)
+ * May be freely distributed under the MIT license.
+ */
+
 (function (window) {
 
   "use strict";
@@ -154,7 +160,7 @@
         request.xhr.statusText = instance._statusText(response.status);
 
         // grab the user success/error function depending on the batch request response
-        var callback = request.settings[request.xhr.statusText == 'error' ? 'error' : 'success'];
+        var callback = request.settings[request.xhr.statusText === 'error' ? 'error' : 'success'];
 
         // call the function, if it exists
         if (callback) {
@@ -227,4 +233,4 @@
     return $ajax.call(this, url, options);
   };
 
-})(window);
+})(this);
