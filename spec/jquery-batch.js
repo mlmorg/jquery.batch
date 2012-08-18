@@ -106,67 +106,89 @@ describe('$.batch', function () {
 
       describe('when calling $.batch.send', function () {
 
-        var server, body;
+        var server;
 
         beforeEach(function () {
           server = sinon.fakeServer.create();
-          batch.send();
-          body = JSON.parse(server.requests[0].requestBody);
         });
 
         afterEach(function () {
           server.restore();
         });
 
-        it('should make request', function () {
-          expect(server.requests.length).to.equal(1);
-        });
-
-        it('should make request via POST', function () {
-          expect(server.requests[0].method).to.equal('POST');
-        });
-
-        it('should have the batch requests in the body', function () {
-          expect(body.length).to.equal(2);
-        });
-
-        it('should send a PUT in the method parameter of the batch request', function () {
-          expect(body[0].method).to.equal(type);
-        });
-
-        it('should send the correct URL in the path parameter of the batch request', function () {
-          expect(body[0].path).to.equal(url);
-        });
-
-        it('should send the correct encoded body in the data parameter of the batch request', function () {
-          expect(body[0].body).to.eql($.param(data));
-        });
-
-        describe('when the server responds', function () {
-
-          var response;
+        describe('with no requests', function () {
 
           beforeEach(function () {
-            response = fixtures._bulk().split('\n');
-            server.respondWith(fixtures.validResponse(fixtures._bulk(), { 'Content-Type': 'text/plain' }));
-            server.response[2] = JSON.parse(server.response[2]);
-            server.respond();
+            batch.requests = [];
+            batch.send();
           });
 
-          it('should call the success function on a successful request', function () {
-            expect(success.calledOnce).to.be.true;
+          it('should not make a request', function () {
+            expect(server.requests.length).to.equal(0);
           });
 
-          it('should pass the parsed response to the success function', function () {
-            expect(success.args[0][0]).to.eql(JSON.parse(JSON.parse(response[0]).body));
+        });
+
+        describe('with requests', function () {
+
+          var body;
+
+          beforeEach(function () {
+            batch.send();
+            body = JSON.parse(server.requests[0].requestBody);
           });
 
-          it('should call the error function on a failed request', function () {
-            expect(error.calledOnce).to.be.true;
+          it('should make request', function () {
+            expect(server.requests.length).to.equal(1);
           });
 
-          it('should pass the parsed response to the error function', function () {
-            expect(error.args[0][0]).to.eql(JSON.parse(JSON.parse(response[1]).body));
+          it('should make request via POST', function () {
+            expect(server.requests[0].method).to.equal('POST');
+          });
+
+          it('should have the batch requests in the body', function () {
+            expect(body.length).to.equal(2);
+          });
+
+          it('should send a PUT in the method parameter of the batch request', function () {
+            expect(body[0].method).to.equal(type);
+          });
+
+          it('should send the correct URL in the path parameter of the batch request', function () {
+            expect(body[0].path).to.equal(url);
+          });
+
+          it('should send the correct encoded body in the data parameter of the batch request', function () {
+            expect(body[0].body).to.eql($.param(data));
+          });
+
+          describe('when the server responds', function () {
+
+            var response;
+
+            beforeEach(function () {
+              response = fixtures._bulk().split('\n');
+              server.respondWith(fixtures.validResponse(fixtures._bulk(), { 'Content-Type': 'text/plain' }));
+              server.response[2] = JSON.parse(server.response[2]);
+              server.respond();
+            });
+
+            it('should call the success function on a successful request', function () {
+              expect(success.calledOnce).to.be.true;
+            });
+
+            it('should pass the parsed response to the success function', function () {
+              expect(success.args[0][0]).to.eql(JSON.parse(JSON.parse(response[0]).body));
+            });
+
+            it('should call the error function on a failed request', function () {
+              expect(error.calledOnce).to.be.true;
+            });
+
+            it('should pass the parsed response to the error function', function () {
+              expect(error.args[0][0]).to.eql(JSON.parse(JSON.parse(response[1]).body));
+            });
+
           });
 
         });

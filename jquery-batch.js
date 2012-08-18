@@ -68,28 +68,30 @@
     send: function (options) {
       var instance = this;
 
-      // map an array of requests
-      var requests = $.map(this.requests, function (data, i) {
-        return data.request;
-      });
+      if (this.requests.length) {
+        // map an array of requests
+        var requests = $.map(this.requests, function (data, i) {
+          return data.request;
+        });
 
-      // set options
-      $.extend(this.options, { data: JSON.stringify(requests) }, options);
+        // set options
+        $.extend(this.options, { data: JSON.stringify(requests) }, options);
 
-      // extend the success option
-      var success = this.options.success;
-      this.options.success = function (data, status, xhr) {
-        // call our _deliver method to handle each individual batch request response
-        instance._deliver.call(instance, data, status, xhr);
-        
-        // user's success function
-        if (success) {
-          success(data, status, xhr);
-        }
-      };
+        // extend the success option
+        var success = this.options.success;
+        this.options.success = function (data, status, xhr) {
+          // call our _deliver method to handle each individual batch request response
+          instance._deliver.call(instance, data, status, xhr);
+          
+          // user's success function
+          if (success) {
+            success(data, status, xhr);
+          }
+        };
 
-      // call the request
-      return $.ajax(this.options);
+        // call the request
+        return $.ajax(this.options);
+      }
     },
 
     // private method to add a request to the batch requests array
