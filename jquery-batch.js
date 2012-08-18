@@ -24,7 +24,7 @@
     },
     
     toJSON: function (requests) {
-      return requests;
+      return JSON.stringify(requests);
     },
 
     parse: function (data) {
@@ -101,7 +101,7 @@
 
         // Create hash of requests to pass as the data in the Ajax request
         if (!options.data) {
-          options.data = JSON.stringify($.batchSettings.toJSON(requests));
+          options.data = $.batchSettings.toJSON(requests);
         }
 
         // Extend the success option
