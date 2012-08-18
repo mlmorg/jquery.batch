@@ -29,6 +29,10 @@ module.exports = function (grunt) {
       files: ['grunt.js', 'jquery-batch.js']
     },
 
+    mocha: {
+      index: ['spec/index.html']
+    },
+
     jshint: {
       options: {
         curly: true,
@@ -49,6 +53,7 @@ module.exports = function (grunt) {
 
   });
 
-  grunt.registerTask('default', 'lint concat min');
+  grunt.loadNpmTasks('grunt-mocha');
+  grunt.registerTask('default', 'lint mocha concat min');
 
 };
