@@ -11,7 +11,7 @@
   // jQuery alias
   var $ = window.$;
 
-  // global batch settings
+  // Global batch settings
   $.batchSettings = {
     url: '/_bulk',
     type: 'POST',
@@ -20,83 +20,86 @@
     dataType: 'text'
   };
 
-  // setup method
+  // Setup method
   $.batchSetup = function (options) {
     return $.extend($.batchSettings, options);
   };
 
-  // create our class
+  
+  // $.batch class
+  // -------------
+
   var Batch = $.batch = function (func, options) {
-    // always instantiate a Batch class even if called without "new"
+    // Always instantiate a Batch class even if called without "new"
     if (!(this instanceof Batch)) {
       return new Batch(func, options);
     }
 
-    // shift arguments if func is an object
+    // Shift arguments if func is an object
     if (typeof func === 'object') {
       options = func;
       func = undefined;
     }
 
-    // default options
+    // Default options
     this.options = $.extend({}, $.batchSettings, options);
 
-    // requests storage
+    // Requests storage
     this.requests = [];
     
     return func ? this.add(func) : this;
   };
 
-  // our methods
+  // Our methods
   $.extend(Batch.prototype, {
 
-    // method for adding requests to the batch
+    // Method for adding requests to the batch
     add: function (func) {
-      // set global _batch variable in jQuery.ajaxSettings
+      // Set global _batch variable in jQuery.ajaxSettings
       $.ajaxSettings._batch = this;
 
-      // call the user's function
+      // Call the user's function
       func.call(this);
       
-      // remove the global _batch variable
+      // Remove the global _batch variable
       delete $.ajaxSettings._batch;
 
       return this;
     },
 
-    // method for running the batch request
+    // Method for running the batch request
     send: function (options) {
       var instance = this;
 
       if (this.requests.length) {
-        // map an array of requests
+        // Map an array of requests
         var requests = $.map(this.requests, function (data, i) {
           return data.request;
         });
 
-        // set options
+        // Set options
         $.extend(this.options, { data: JSON.stringify(requests) }, options);
 
-        // extend the success option
+        // Extend the success option
         var success = this.options.success;
         this.options.success = function (data, status, xhr) {
-          // call our _deliver method to handle each individual batch request response
+          // Call our _deliver method to handle each individual batch request response
           instance._deliver.call(instance, data, status, xhr);
           
-          // user's success function
+          // User's success function
           if (success) {
             success(data, status, xhr);
           }
         };
 
-        // call the request
+        // Call the request
         return $.ajax(this.options);
       }
     },
 
-    // private method to add a request to the batch requests array
+    // Private method to add a request to the batch requests array
     _addRequest: function (xhr, settings) {
-      // create data object
+      // Create data object
       var data = {
         xhr: xhr,
         settings: settings,
@@ -108,76 +111,78 @@
         }
       };
 
-      // extract query params
+      // Extract query params
       var queryparams = this._extractParams(settings.url);
 
       if (queryparams) {
-        // remove query params from url
+        // Remove query params from url
         data.request.path = settings.url.replace('?' + queryparams, '');
 
-        // add the query params to the "query" object
+        // Add the query params to the "query" object
         data.request.query = settings.query ? settings.query : queryparams;
       }
 
-      // set request header
-      // since the _bulk endpoint merges the outer request into the inner requests
-      // here we explicitly send the content-type header for the inner request
+      // Set request header. Since the _bulk endpoint merges the outer request
+      // into the inner requests, here we explicitly send the content-type
+      // header for the inner request
       if (settings.contentType) {
         data.request.headers['content-type'] = settings.contentType;
       }
 
-      // set any user-passed headers
-      // similar to the request header above, when the user passes headers in the settings.headers object
-      // we explicitly set those for the inner requests
+      // Set any user-passed headers. Similar to the request header above,
+      // when the user passes headers in the settings.headers object we
+      // explicitly set those for the inner requests
       if (settings.headers) {
         $.each(settings.headers, function (name, value) {
           data.request.headers[name.toLowerCase() || name] = value;
         });
       }
 
-      // add request object to the batch requests array
+      // Add request object to the batch requests array
       this.requests.push(data);
     },
 
-    // delivers each batch request response to its intended xhr success/error function
+    // Delivers each batch request response to its intended xhr
+    // success/error function
     _deliver: function (data, status, xhr) {
       var instance = this;
-      // create an array of returned responses based on newlines and loop through them
+      // Create an array of returned responses based on newlines and
+      // loop through them
       $.each(data.split('\n'), function (i, response) {
-        // only work with batch requests that we have stored
+        // Only work with batch requests that we have stored
         if (!instance.requests[i]) {
           return;
         }
 
-        // grab the stored request data
+        // Grab the stored request data
         var request = instance.requests[i];
 
-        // parse the response
+        // Parse the response
         response = JSON.parse(response);
 
-        // add the response status code to the xhr request
+        // Add the response status code to the xhr request
         request.xhr.status = response.status;
 
-        // build statusText a la jQuery based on status code
+        // Build statusText a la jQuery based on status code
         request.xhr.statusText = instance._statusText(response.status);
 
-        // grab the user success/error function depending on the batch request response
+        // Grab the user success/error function depending on the batch request response
         var callback = request.settings[request.xhr.statusText === 'error' ? 'error' : 'success'];
 
-        // call the function, if it exists
+        // Call the function, if it exists
         if (callback) {
           callback.call(request.xhr, JSON.parse(response.body), request.xhr.statusText, request.xhr);
         }
       });
     },
 
-    // private method to extract query parameters from a string
+    // Private method to extract query parameters from a string
     _extractParams: function (url) {
       var pos = url.lastIndexOf('?');
       return pos >= 0 ? url.substr(pos + 1) : null;
     },
 
-    // private method to create statusText based on a statusCode a la jQuery
+    // Private method to create statusText based on a statusCode a la jQuery
     _statusText: function (code) {
       var statusText = 'error';
       if (code >= 200 && code < 300 || code === 304) {
@@ -192,46 +197,50 @@
 
   });
 
-  // override jQuery.ajax to cancel any outgoing requests called within a $.batch() function
-  // and add them to the batch requests array for that batch instance
-  // -------
-  
+
+  // $.ajax override
+  // ---------------
+
+  // Override jQuery.ajax to cancel any outgoing requests called within
+  // a $.batch() function and add them to the batch requests array for
+  // that batch instance
   var $ajax = $.ajax;
   
   $.ajax = function (url, options) {
-    // shift arguments when options are passed as first argument
+    // Shift arguments when options are passed as first argument
     if (typeof url === 'object') {
       options = url;
       url = undefined;
     }
 
-    // set options object
+    // Set options object
     options = options || {};
 
-    // override the jQuery beforeSend method
+    // Override the jQuery beforeSend method
     var beforeSend = options.beforeSend;
     options.beforeSend = function (xhr, settings) {
-      // call the user's beforeSend function, if passed
+      // Call the user's beforeSend function, if passed
       if (beforeSend) {
         var before = beforeSend(xhr, settings);
 
-        // cancel request if user's beforeSend function returns false
+        // Cancel request if user's beforeSend function returns false
         if (before === false) {
           return before;
         }
       }
 
-      // we're only worried about requests made within a $.batch function (aka they have a _batch object)
+      // We're only worried about requests made within a $.batch function
+      // (aka they have a _batch object)
       if (settings._batch) {
-        // add request to batch
+        // Add request to batch
         settings._batch._addRequest(xhr, settings);
 
-        // cancel this request
+        // Cancel this request
         return false;
       }
     };
 
-    // run original $.ajax method for all other requests
+    // Run original $.ajax method for all other requests
     return $ajax.call(this, url, options);
   };
 
