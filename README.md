@@ -4,7 +4,7 @@ Provides a simple interface for sending batch Ajax requests with jQuery.
 
 ## Usage
 
-The default usage of jQuery Batch consists of simply running any Ajax requests
+The default usage of jQuery Batch consists of simply running Ajax requests
 inside an anonymous function within the batch constructor and calling the
 `send` method, like so:
 
@@ -44,11 +44,11 @@ setTimeout(function () {
 By default, jQuery Batch requests are sent with the following jQuery Ajax
 options set:
 
-- `url`: `_bulk`
-- `type`: `POST`
-- `contentType`: `application/json`
-- `processData`: `false`
-- `dataType`: `text`
+- `url`: *_bulk*
+- `type`: *POST*
+- `contentType`: *application/json*
+- `processData`: *false*
+- `dataType`: *text*
 
 All of these defaults (and any other jQuery Ajax options) can be changed using
 the $.batchSetup function, like so:
@@ -58,6 +58,7 @@ $.batchSetup({
   contentType: 'application/x-www-form-urlencoded',
   processData: true
 });
+```
 
 In addition, the following helper functions are also configurable using
 $.batchSetup:
@@ -76,7 +77,7 @@ $.batchSetup:
     array after passing it through `JSON.stringify`.
 
 3. `parse([data])`
-    This is used to parse out the response from the server. This *must* return
+    This is used to parse out the response from the server. This **must** return
     a hash consisting of `status` - the response status code, and `body` - the
     body of the request response. By default, `parse` assumes the server
     returns the results line-delimited (each request on one line) with each
