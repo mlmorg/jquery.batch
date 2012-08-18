@@ -51,7 +51,7 @@ options set:
 - `dataType`: *text*
 
 All of these defaults (and any other jQuery Ajax options) can be changed using
-the $.batchSetup function, like so:
+the `$.batchSetup` function, like so:
 
 ``` javascript
 $.batchSetup({
@@ -61,7 +61,7 @@ $.batchSetup({
 ```
 
 In addition, the following helper functions are also configurable using
-$.batchSetup:
+`$.batchSetup`:
 
 - `serialize([request], [xhr], [settings])`
     
