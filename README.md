@@ -64,26 +64,33 @@ In addition, the following helper functions are also configurable using
 $.batchSetup:
 
 1. `serialize([request], [xhr], [settings])`
+    
     This is used to serialize the data of a single request. `request` is a
     hash consisting of:
+
         - `method` - the request method
         - `path` - the url path
         - `query` - a string of query parameters (if any were passed)
         - `headers` - a hash containing the request headers
         - `body` - the request body
+
     By default, this simply returns the `request` hash unchanged.
 
 2. `toJSON([requests])`
+
     This is used to serialize an array of all requests before it is sent as
     a batch Ajax request. `requests` is simply an array of all of the
     individual requests in a batch. By default, this returns the `requests`
     array after passing it through `JSON.stringify`.
 
 3. `parse([data])`
+
     This is used to parse out the response from the server. This **must** return
     a hash consisting of:
+
         - `status` - the response status code
         - `body` - the body of the request response
+
     By default, `parse` assumes the server returns the results line-delimited
     (each request on one line) with each request as escaped-JSON text with a
     JSON `body` (thus, doubly-escaped JSON).
