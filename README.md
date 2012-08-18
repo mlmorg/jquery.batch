@@ -79,14 +79,14 @@ In addition, the following helper functions are also configurable using
 - `toJSON([requests])`
 
     This is used to serialize an array of all requests before it is sent as
-    a batch Ajax request. `requests` is simply an array of all of the
+    a batch Ajax request. `requests` is simply an array of all the
     individual requests in a batch. By default, this returns the `requests`
     array after passing it through `JSON.stringify`.
 
 - `parse([data])`
 
-    This is used to parse out the response from the server. This **must** return
-    a hash consisting of:
+    This is used to parse out the response from the server. This **must**
+    return an array of request hashes, with each hash consisting of (at least):
 
     - `status` - the response status code
     - `body` - the body of the request response
