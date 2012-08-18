@@ -17,7 +17,25 @@
     type: 'POST',
     contentType: 'application/json',
     processData: false,
-    dataType: 'text'
+    dataType: 'text',
+
+    serialize: function (request, xhr, settings) {
+      return request;
+    },
+    
+    toJSON: function (requests) {
+      return requests;
+    },
+
+    parse: function (data) {
+      var responses = [];
+      $.each(data.split('\n'), function (i, response) {
+        response = JSON.parse(response);
+        response.body = JSON.parse(response.body);
+        responses.push(response);
+      });
+      return responses;
+    }
   };
 
   // Setup method
@@ -69,6 +87,7 @@
 
     // Method for running the batch request
     send: function (options) {
+      options = options || {};
       var instance = this;
 
       if (this.requests.length) {
@@ -77,14 +96,20 @@
           return data.request;
         });
 
-        // Set options
-        $.extend(this.options, { data: JSON.stringify(requests) }, options);
+        // Build the Ajax request options
+        options = $.extend({}, this.options, options);
+
+        // Create hash of requests to pass as the data in the Ajax request
+        if (!options.data) {
+          options.data = JSON.stringify($.batchSettings.toJSON(requests));
+        }
 
         // Extend the success option
-        var success = this.options.success;
-        this.options.success = function (data, status, xhr) {
-          // Call our _deliver method to handle each individual batch request response
-          instance._deliver.call(instance, data, status, xhr);
+        var success = options.success;
+        options.success = function (data, status, xhr) {
+          // Call our _deliver method to handle each individual
+          // batch request response
+          instance._deliver.call(instance, data);
           
           // User's success function
           if (success) {
@@ -93,22 +118,18 @@
         };
 
         // Call the request
-        return $.ajax(this.options);
+        return $.ajax(options);
       }
     },
 
     // Private method to add a request to the batch requests array
     _addRequest: function (xhr, settings) {
-      // Create data object
-      var data = {
-        xhr: xhr,
-        settings: settings,
-        request: {
-          method: settings.type,
-          path: settings.url,
-          headers: {},
-          body: settings.data
-        }
+      // Create default request object
+      var request = {
+        method: settings.type,
+        path: settings.url,
+        headers: {},
+        body: settings.data
       };
 
       // Extract query params
@@ -116,39 +137,46 @@
 
       if (queryparams) {
         // Remove query params from url
-        data.request.path = settings.url.replace('?' + queryparams, '');
+        request.path = settings.url.replace('?' + queryparams, '');
 
         // Add the query params to the "query" object
-        data.request.query = settings.query ? settings.query : queryparams;
+        request.query = settings.query ? settings.query : queryparams;
       }
 
-      // Set request header. Since the _bulk endpoint merges the outer request
-      // into the inner requests, here we explicitly send the content-type
-      // header for the inner request
+      // Explicitly set the content-type header
       if (settings.contentType) {
-        data.request.headers['content-type'] = settings.contentType;
+        request.headers['content-type'] = settings.contentType;
       }
 
-      // Set any user-passed headers. Similar to the request header above,
-      // when the user passes headers in the settings.headers object we
-      // explicitly set those for the inner requests
+      // Explicitly set any user-passed headers
       if (settings.headers) {
         $.each(settings.headers, function (name, value) {
-          data.request.headers[name.toLowerCase() || name] = value;
+          request.headers[name.toLowerCase() || name] = value;
         });
       }
 
-      // Add request object to the batch requests array
-      this.requests.push(data);
+      // Pass the request object off to the user for further serialization
+      request = $.batchSettings.serialize(request, xhr, settings);
+
+      // Add request object to the batch requests array, passing additional
+      // necessary data
+      this.requests.push({
+        xhr: xhr,
+        settings: settings,
+        request: request
+      });
     },
 
     // Delivers each batch request response to its intended xhr
     // success/error function
-    _deliver: function (data, status, xhr) {
+    _deliver: function (data) {
       var instance = this;
-      // Create an array of returned responses based on newlines and
-      // loop through them
-      $.each(data.split('\n'), function (i, response) {
+
+      // Pass the response off to the user to parse out the responses
+      var responses = $.batchSettings.parse(data);
+
+      // Loop through the responses
+      $.each(responses, function (i, response) {
         // Only work with batch requests that we have stored
         if (!instance.requests[i]) {
           return;
@@ -156,9 +184,6 @@
 
         // Grab the stored request data
         var request = instance.requests[i];
-
-        // Parse the response
-        response = JSON.parse(response);
 
         // Add the response status code to the xhr request
         request.xhr.status = response.status;
@@ -169,9 +194,10 @@
         // Grab the user success/error function depending on the batch request response
         var callback = request.settings[request.xhr.statusText === 'error' ? 'error' : 'success'];
 
-        // Call the function, if it exists
+        // Call the user/success function, if it exists. Pass the response
+        // body, status text and xhr.
         if (callback) {
-          callback.call(request.xhr, JSON.parse(response.body), request.xhr.statusText, request.xhr);
+          callback.call(request.xhr, response.body, request.xhr.statusText, request.xhr);
         }
       });
     },
