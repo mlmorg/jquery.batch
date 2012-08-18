@@ -1,10 +1,12 @@
 # jQuery Batch
 
-Provides a simple interface for sending batch ajax requests with jQuery.
+Provides a simple interface for sending batch Ajax requests with jQuery.
 
 ## Usage
 
-The following example illustrates how to send a single batch request consisting of two basic jQuery Ajax requests:
+The default usage of jQuery Batch consists of simply running any Ajax requests
+inside an anonymous function within the batch constructor and calling the
+`send` method, like so:
 
 ``` javascript
 $.batch(function () {
@@ -13,39 +15,74 @@ $.batch(function () {
 }).send();
 ```
 
-The above bulk request would be sent with the following format:
-
-``` javascript
-[
-  {
-    path: '/users',
-    query: 'order=name',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    method: 'GET'
-  {
-    path: '/contacts/1',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    method: 'PUT',
-    body: { name: 'Joe Strummer' }
-  }
-]
-```
-
-Requests can also be added to a batch at any point before calling the `send` method by using the `add` method:
+Requests can also be added to a batch dynamically at any point by using the
+`add` method:
 
 ``` javascript
 var batch = $.batch();
+
 batch.add(function () {
   $.get('/users?order=name');
 });
+
 batch.send();
 ```
 
-One useful example of using `add` might be to create a global batch that syncs with the server every 5 seconds:
+It's even possible to have a global batch that syncs with the server every 5
+seconds:
 
 ``` javascript
 var batch = $.batch();
+
 setTimeout(function () {
   batch.send();
 }, 5000);
 ```
+
+## Configuration
+
+By default, jQuery Batch requests are sent with the following jQuery Ajax
+options set:
+
+- `url`: `_bulk`
+- `type`: `POST`
+- `contentType`: `application/json`
+- `processData`: `false`
+- `dataType`: `text`
+
+All of these defaults (and any other jQuery Ajax options) can be changed using
+the $.batchSetup function, like so:
+
+``` javascript
+$.batchSetup({
+  contentType: 'application/x-www-form-urlencoded',
+  processData: true
+});
+
+In addition, the following helper functions are also configurable using
+$.batchSetup:
+
+1. `serialize([request], [xhr], [settings])`
+    This is used to serialize the data of a single request. `request` is a
+    hash consisting of `method` - the request method, `path` - the url path,
+    `query` - a string of query parameters (if any were passed), `headers` - a
+    hash containing the request headers, and `body` - the request body. By
+    default, this simply returns the `request` hash unchanged.
+
+2. `toJSON([requests])`
+    This is used to serialize an array of all requests before it is sent as
+    a batch Ajax request. `requests` is simply an array of all of the
+    individual requests in a batch. By default, this returns the `requests`
+    array after passing it through `JSON.stringify`.
+
+3. `parse([data])`
+    This is used to parse out the response from the server. This *must* return
+    a hash consisting of `status` - the response status code, and `body` - the
+    body of the request response. By default, `parse` assumes the server
+    returns the results line-delimited (each request on one line) with each
+    request as escaped-JSON text with a JSON `body` (thus, doubly-escaped JSON).
+
+## Installation
+
+Both compressed and minified versions of the library are available. Simply
+include in your project and use as directed.
