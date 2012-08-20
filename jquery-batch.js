@@ -30,9 +30,11 @@
     parse: function (data) {
       var responses = [];
       $.each(data.split('\n'), function (i, response) {
-        response = JSON.parse(response);
-        response.body = JSON.parse(response.body);
-        responses.push(response);
+        if (response) {
+          response = JSON.parse(response);
+          response.body = JSON.parse(response.body);
+          responses.push(response);
+        }
       });
       return responses;
     }
