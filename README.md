@@ -34,12 +34,12 @@ global batch that syncs with the server every 5 seconds:
 ``` javascript
 var batch = $.batch();
 
-setTimeout(function () {
+setInterval(function () {
   batch.send();
 }, 5000);
 ```
 
-jQuery Batch respects the `beforeSend` method of each individual request. If
+Note: jQuery Batch respects the `beforeSend` method of each individual request. If
 this option returns `false`, the request will not be added to the batch. This
 can be useful when caching requests irrespective of if they were called within
 a batch request or not:
