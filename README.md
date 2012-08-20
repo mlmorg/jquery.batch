@@ -28,8 +28,8 @@ batch.add(function () {
 batch.send();
 ```
 
-It's even possible to have a global batch that syncs with the server every 5
-seconds:
+One useful example of the `add` method, is to be able to add requests to a
+global batch that syncs with the server every 5 seconds:
 
 ``` javascript
 var batch = $.batch();
@@ -37,6 +37,25 @@ var batch = $.batch();
 setTimeout(function () {
   batch.send();
 }, 5000);
+```
+
+jQuery Batch respects the `beforeSend` method of each individual request. If
+this option returns `false`, the request will not be added to the batch. This
+can be useful when caching requests irrespective of if they were called within
+a batch request or not:
+
+``` javascript
+$.batch(function () {
+  $.ajax({
+    url: '/users?order=name',
+    beforeSend: function (xhr, settings) {
+      // If cached, this request will not be added to the batch.
+      if (window.CachedRequests[settings.url]) {
+        return false;
+      }
+    }
+  });
+}).send();
 ```
 
 ## Configuration
