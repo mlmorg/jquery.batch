@@ -1,4 +1,4 @@
-# jQuery Batch
+# jQuery.Batch
 
 Provides a simple interface for sending batch Ajax requests with jQuery. Simply
 include the `jquery.batch.js` file after jQuery in your development
@@ -6,7 +6,7 @@ environment.
 
 ## Usage
 
-The standard usage of jQuery Batch consists of simply running Ajax requests
+The standard usage of jQuery.Batch consists of simply running Ajax requests
 inside an anonymous function within the batch constructor and calling the
 `send` method, like so:
 
@@ -42,7 +42,7 @@ be handled upon completion of the full request, like so:
 batch.send({ success: success });
 ```
 
-In addition, jQuery Batch will respect the `beforeSend` method of each
+In addition, jQuery.Batch will respect the `beforeSend` method of each
 individual request. If this function returns `false`, the request will not be
 added to the batch.
 
@@ -61,7 +61,7 @@ $.batch(function () {
 
 ## Configuration
 
-By default, jQuery Batch requests are sent with the following jQuery Ajax
+By default, jQuery.Batch requests are sent with the following jQuery Ajax
 options set:
 
 - `url`: *_bulk*
