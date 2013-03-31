@@ -204,7 +204,7 @@ describe('$.batch', function () {
       describe('when the function does not return false', function () {
 
         beforeEach(function () {
-          beforeSend = sinon.spy('func');
+          beforeSend = sinon.spy();
           batch.add(function () {
             $.ajax(url, { type: type, data: data, beforeSend: beforeSend });
           });
