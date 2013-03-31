@@ -1,10 +1,12 @@
 # jQuery Batch
 
-Provides a simple interface for sending batch Ajax requests with jQuery.
+Provides a simple interface for sending batch Ajax requests with jQuery. Simply
+include the `jquery.batch.js` file after jQuery in your development
+environment.
 
 ## Usage
 
-The default usage of jQuery Batch consists of simply running Ajax requests
+The standard usage of jQuery Batch consists of simply running Ajax requests
 inside an anonymous function within the batch constructor and calling the
 `send` method, like so:
 
@@ -14,6 +16,10 @@ $.batch(function () {
   $.post('/users/1', { name: 'Joe Strummer' });
 }).send();
 ```
+
+Rather than sending the two requests individually, the data for each individual
+request would be serialized and sent as a single request to the server
+following the configuration settings described below.
 
 Requests can also be added to a batch dynamically at any point by using the
 `add` method:
@@ -28,28 +34,23 @@ batch.add(function () {
 batch.send();
 ```
 
-One useful example of the `add` method, is to be able to add requests to a
-global batch that syncs with the server every 5 seconds:
+The `send` method itself can be passed a hash of options which are passed on
+to the $.ajax request for the entire batch. You could set a success callback to
+be handled upon completion of the full request, like so:
 
 ``` javascript
-var batch = $.batch();
-
-setInterval(function () {
-  batch.send();
-}, 5000);
+batch.send({ success: success });
 ```
 
-Note: jQuery Batch respects the `beforeSend` method of each individual request. If
-this option returns `false`, the request will not be added to the batch. This
-can be useful when caching requests irrespective of if they were called within
-a batch request or not:
+In addition, jQuery Batch will respect the `beforeSend` method of each
+individual request. If this function returns `false`, the request will not be
+added to the batch.
 
 ``` javascript
 $.batch(function () {
   $.ajax({
     url: '/users?order=name',
     beforeSend: function (xhr, settings) {
-      // If cached, this request will not be added to the batch.
       if (window.CachedRequests[settings.url]) {
         return false;
       }
@@ -82,39 +83,34 @@ $.batchSetup({
 In addition, the following helper functions are also configurable using
 `$.batchSetup`:
 
-- `serialize([request], [xhr], [settings])`
+#### serialize([request], [xhr], [settings])
     
-    This is used to serialize the data of a single request. `request` is a
-    hash consisting of:
+This is used to serialize the data of a single request. `request` is a hash
+consisting of:
 
-    - `method` - the request method
-    - `path` - the url path
-    - `query` - a string of query parameters (if any were passed)
-    - `headers` - a hash containing the request headers
-    - `body` - the request body
+- `method` - the request method
+- `path` - the url path
+- `query` - a string of query parameters (if any were passed)
+- `headers` - a hash containing the request headers
+- `body` - the request body
 
-    By default, this simply returns the `request` hash unchanged.
+By default, this simply returns the `request` hash unchanged.
 
-- `toJSON([requests])`
+#### toJSON([requests])
 
-    This is used to serialize an array of all requests before it is sent as
-    a batch Ajax request. `requests` is simply an array of all the
-    individual requests in a batch. By default, this returns the `requests`
-    array after passing it through `JSON.stringify`.
+This is used to serialize an array of all requests before it is sent as a batch
+Ajax request. `requests` is simply an array of all the individual requests in a
+batch. By default, this returns the `requests` array after passing it through 
+`JSON.stringify`.
 
-- `parse([data])`
+#### parse([data])
 
-    This is used to parse out the response from the server. This **must**
-    return an array of request hashes, with each hash consisting of (at least):
+This is used to parse out the response from the server. This **must** return an
+array of request hashes, with each hash consisting of (at least):
 
-    - `status` - the response status code
-    - `body` - the body of the request response
+- `status` - the response status code
+- `body` - the body of the request response
 
-    By default, `parse` assumes the server returns the results line-delimited
-    (each request on one line) with each request as escaped-JSON text with a
-    JSON `body` (thus, doubly-escaped JSON).
-
-## Installation
-
-Both compressed and minified versions of the library are available. Simply
-include in your project and use as directed.
+By default, `parse` assumes the server returns the results line-delimited (each
+request on one line) with each request as escaped-JSON text with a JSON `body` 
+(thus, doubly-escaped JSON).
