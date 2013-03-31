@@ -1,9 +1,8 @@
 /*
- * jquery-batch.js v0.1
- * Copyright 2012, Matt Morgan (@mlmorg)
- * May be freely distributed under the MIT license.
+ * jquery.batch v0.1.0
+ * Copyright 2013, Matt Morgan (@mlmorg)
+ * MIT license
  */
-
 (function (window) {
 
   "use strict";
@@ -19,10 +18,10 @@
     processData: false,
     dataType: 'text',
 
-    serialize: function (request, xhr, settings) {
+    serialize: function (request) {
       return request;
     },
-    
+
     toJSON: function (requests) {
       return JSON.stringify(requests);
     },
@@ -45,7 +44,7 @@
     return $.extend($.batchSettings, options);
   };
 
-  
+
   // $.batch class
   // -------------
 
@@ -66,7 +65,7 @@
 
     // Requests storage
     this.requests = [];
-    
+
     return func ? this.add(func) : this;
   };
 
@@ -80,7 +79,7 @@
 
       // Call the user's function
       func.call(this);
-      
+
       // Remove the global _batch variable
       delete $.ajaxSettings._batch;
 
@@ -94,7 +93,7 @@
 
       if (this.requests.length) {
         // Map an array of requests
-        var requests = $.map(this.requests, function (data, i) {
+        var requests = $.map(this.requests, function (data) {
           return data.request;
         });
 
@@ -112,7 +111,7 @@
           // Call our _deliver method to handle each individual
           // batch request response
           instance._deliver.call(instance, data);
-          
+
           // User's success function
           if (success) {
             success(data, status, xhr);
@@ -233,7 +232,7 @@
   // a $.batch() function and add them to the batch requests array for
   // that batch instance
   var $ajax = $.ajax;
-  
+
   $.ajax = function (url, options) {
     // Shift arguments when options are passed as first argument
     if (typeof url === 'object') {
