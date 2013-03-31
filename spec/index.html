@@ -1,29 +1,33 @@
 <!doctype html>
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8"/>
-    <title>jQuery Batch Test Suite</title>
+    <title>Test Suite</title>
 
-    <link rel="stylesheet" href="vendor/mocha.css">
+    <link rel="stylesheet" href="../components/mocha/mocha.css">
 
     <!-- vendor files -->
-    <script src="vendor/mocha.js"></script>
-    <script src="vendor/sinon.js"></script>
-    <script src="vendor/chai.js"></script>
-    <script src="vendor/jquery.js"></script>
+    <script src="../components/mocha/mocha.js"></script>
+    <script src="../components/sinon/lib/sinon.js"></script>
+    <script src="../components/sinon/lib/sinon/match.js"></script>
+    <script src="../components/sinon/lib/sinon/spy.js"></script>
+    <script src="../components/sinon/lib/sinon/util/event.js"></script>
+    <script src="../components/sinon/lib/sinon/util/fake_xml_http_request.js"></script>
+    <script src="../components/sinon/lib/sinon/util/fake_server.js"></script>
+    <script src="../components/chai/chai.js"></script>
+    <script src="../components/jquery/jquery.js"></script>
 
     <!-- js files -->
-    <script src="../jquery-batch.js"></script>
+    <script src="../jquery.batch.js"></script>
 
     <!-- setup mocha -->
     <script>
-      mocha.setup({ ui: 'bdd', globals: ['XMLHttpRequest'] });
+      mocha.setup({ ui: 'bdd', globals: ['jQuery'] });
     </script>
-    <script src="vendor/mocha-helper.js"></script>
 
     <!-- test suite -->
-    <script src="fixtures.js"></script>
-    <script src="jquery-batch.js"></script>
+    <script src="helper.js"></script>
+    <script src="batch.js"></script>
 
     <!-- run mocha -->
     <script>
@@ -31,9 +35,9 @@
       var should = chai.should();
       var assert = chai.assert;
 
-      $(function () {
-        mocha.run();
-      });
+      if (navigator.userAgent.indexOf('PhantomJS') < 0) {
+        $(function () { mocha.run(); });
+      }
     </script>
   </head>
   <body>

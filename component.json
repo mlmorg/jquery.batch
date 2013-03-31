@@ -1,0 +1,13 @@
+{
+  "name": "jquery.batch",
+  "version": "0.1.0",
+  "main": "jquery.batch.js",
+  "dependencies": {
+    "jquery": "~1.9.1"
+  },
+  "devDependencies": {
+    "mocha": "~1.8.1",
+    "sinon": "~1.6.0",
+    "chai": "~1.5.0"
+  }
+}
