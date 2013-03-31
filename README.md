@@ -114,3 +114,23 @@ array of request hashes, with each hash consisting of (at least):
 By default, `parse` assumes the server returns the results line-delimited (each
 request on one line) with each request as escaped-JSON text with a JSON `body` 
 (thus, doubly-escaped JSON).
+
+## Testing Environment
+
+Install [Node.js](http://nodejs.org/). Make sure you've installed 
+[Grunt](http://gruntjs.com/) and [Bower](https://github.com/twitter/bower)
+globally:
+
+```
+npm install grunt-cli -g
+npm install bower -g
+```
+Then, install the development dependencies:
+
+```
+npm install
+```
+Lint and run the tests with:
+```
+npm test
+```
