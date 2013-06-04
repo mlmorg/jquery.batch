@@ -239,4 +239,43 @@ describe('$.batch', function () {
 
   });
 
+  describe('when making a batch request within another batch request', function () {
+
+    var server;
+
+    beforeEach(function () {
+      batch = new $.batch(function () {
+        $.ajax(url);
+        $.batch(function () {
+          $.ajax(url);
+        }).send();
+        $.ajax(url);
+      });
+    });
+
+    it('should add all requests to the outer batch', function () {
+      expect(batch.requests.length).to.equal(3);
+    });
+
+    describe('when calling send on the outer batch', function () {
+
+      var server;
+
+      beforeEach(function () {
+        server = sinon.fakeServer.create();
+        batch.send();
+      });
+
+      afterEach(function () {
+        server.restore();
+      });
+      
+      it('should only make a single batch request', function () {
+        expect(server.requests.length).to.equal(1);
+      });
+
+    });
+
+  });
+
 });

@@ -63,10 +63,18 @@
     // Default options
     this.options = $.extend({}, $.batchSettings, options);
 
+    // Find a parent batch object, if we're nested
+    this.parent = $.ajaxSettings._batch;
+
     // Requests storage
     this.requests = [];
 
-    return func ? this.add(func) : this;
+    // Add any requests
+    if (func) {
+      this.add(func);
+    }
+
+    return this;
   };
 
   // Our methods
@@ -75,13 +83,15 @@
     // Method for adding requests to the batch
     add: function (func) {
       // Set global _batch variable in jQuery.ajaxSettings
-      $.ajaxSettings._batch = this;
+      $.ajaxSettings._batch = this.parent || this;
 
       // Call the user's function
-      func.call(this);
+      func.call($.ajaxSettings._batch);
 
-      // Remove the global _batch variable
-      delete $.ajaxSettings._batch;
+      // Remove the global _batch variable when we're not nested
+      if (!this.parent) {
+        delete $.ajaxSettings._batch;
+      }
 
       return this;
     },
@@ -89,13 +99,44 @@
     // Method for running the batch request
     send: function (options) {
       options = options || {};
-      var instance = this;
+      var instance = this, success;
 
-      if (this.requests.length) {
+      // When we're handling a sub-batch object, wrap any success functions and
+      // add them to the parent batch success
+      if (this.parent && options.success) {
+        success = this.parent.options.success;
+        this.parent.options.success = function (data, status, xhr) {
+          options.success(data, status, xhr);
+          if (success) {
+            success(data, status, xhr);
+          }
+        };
+      }
+
+      // When we're handling the top-most batch, send the request
+      else if (this.requests.length) {
         // Map an array of requests
         var requests = $.map(this.requests, function (data) {
           return data.request;
         });
+
+        // Extend the success option
+        success = options.success;
+        options.success = function (data, status, xhr) {
+          // Call our _deliver method to handle each individual
+          // batch request response
+          instance._deliver.call(instance, data);
+
+          // Sub-batch success functions
+          if (instance.options.success) {
+            instance.options.success(data, status, xhr);
+          }
+
+          // User's success function
+          if (success) {
+            success(data, status, xhr);
+          }
+        };
 
         // Build the Ajax request options
         options = $.extend({}, this.options, options);
@@ -104,19 +145,6 @@
         if (!options.data) {
           options.data = $.batchSettings.toJSON(requests);
         }
-
-        // Extend the success option
-        var success = options.success;
-        options.success = function (data, status, xhr) {
-          // Call our _deliver method to handle each individual
-          // batch request response
-          instance._deliver.call(instance, data);
-
-          // User's success function
-          if (success) {
-            success(data, status, xhr);
-          }
-        };
 
         // Call the request
         return $.ajax(options);
