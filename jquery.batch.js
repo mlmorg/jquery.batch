@@ -31,7 +31,9 @@
       $.each(data.split('\n'), function (i, response) {
         if (response) {
           response = JSON.parse(response);
-          response.body = JSON.parse(response.body);
+          if (response.body) {
+            response.body = JSON.parse(response.body);
+          }
           responses.push(response);
         }
       });
