@@ -101,16 +101,16 @@
     // Method for running the batch request
     send: function (options) {
       options = options || {};
-      var instance = this, success;
+      var instance = this;
 
-      // When we're handling a sub-batch object, wrap any success functions and
-      // add them to the parent batch success
+      // When we're handling a child batch object, wrap any success functions
+      // and add them to the parent batch success
       if (this.parent && options.success) {
-        success = this.parent.options.success;
+        var parentSuccess = this.parent.options.success;
         this.parent.options.success = function (data, status, xhr) {
           options.success(data, status, xhr);
-          if (success) {
-            success(data, status, xhr);
+          if (parentSuccess) {
+            parentSuccess(data, status, xhr);
           }
         };
       }
@@ -122,16 +122,17 @@
           return data.request;
         });
 
-        // Extend the success option
-        success = options.success;
+        // Override the success callback
+        var success = options.success;
+        var childSuccess = this.options.success;
         options.success = function (data, status, xhr) {
           // Call our _deliver method to handle each individual
           // batch request response
           instance._deliver.call(instance, data);
 
-          // Sub-batch success functions
-          if (instance.options.success) {
-            instance.options.success(data, status, xhr);
+          // Child batch success functions
+          if (childSuccess) {
+            childSuccess(data, status, xhr);
           }
 
           // User's success function
